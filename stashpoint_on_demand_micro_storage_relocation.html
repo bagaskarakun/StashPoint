@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StashPoint — Smart Micro-Storage & Relocation for Perantau</title>
+  
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              dark: '#080c16',
+              card: '#111827',
+              cardBorder: '#1f293d',
+              emerald: '#10b981',
+              cyan: '#06b6d4',
+              amber: '#f59e0b',
+              glow: 'rgba(16, 185, 129, 0.15)',
+            }
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'float': 'floating 4s ease-in-out infinite',
+            'laser': 'scan 2s ease-in-out infinite alternate',
+          },
+          keyframes: {
+            floating: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-8px)' },
+            },
+            scan: {
+              '0%': { top: '0%' },
+              '100%': { top: '96%' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #080c16;
+      color: #f1f5f9;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+    }
+    .glass-card {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .glass-card-hover:hover {
+      border-color: rgba(16, 185, 129, 0.4);
+      box-shadow: 0 10px 30px -10px rgba(16, 185, 129, 0.2);
+      transform: translateY(-3px);
+    }
+    .laser-line {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #10b981, #06b6d4, transparent);
+      box-shadow: 0 0 14px #10b981, 0 0 24px #06b6d4;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #080c16;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1f293d;
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #10b981;
+    }
+  </style>
+</head>
+<body class="selection:bg-emerald-500 selection:text-slate-900">
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
+  <!-- Navigation Header -->
+  <header class="fixed top-0 left-0 w-full z-40 glass-card border-b border-slate-800/80 bg-[#080c16]/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-3 group">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+          <i class="fa-solid fa-boxes-stacked text-lg"></i>
+        </div>
+        <div>
+          <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-emerald-400 bg-clip-text text-transparent">StashPoint</span>
+          <span class="text-[10px] tracking-widest block uppercase text-emerald-400 font-semibold">Micro-Storage & Reloq</span>
+        </div>
+      </a>
+
+      <!-- Desktop Nav Items -->
+      <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
+        <a href="#simulator" class="hover:text-emerald-400 transition-colors">Volume Estimator</a>
+        <a href="#vault-tracker" class="hover:text-emerald-400 transition-colors">Demo Segel Digital</a>
+        <a href="#tiers" class="hover:text-emerald-400 transition-colors">Pilihan Layanan</a>
+        <a href="#community" class="hover:text-emerald-400 transition-colors">Komunitas Perantau</a>
+        <a href="#faq" class="hover:text-emerald-400 transition-colors">FAQ</a>
+      </nav>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-3">
+        <button onclick="scrollToSection('simulator')" class="hidden sm:inline-flex px-4 py-2 text-xs font-semibold rounded-lg text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all">
+          <i class="fa-solid fa-calculator mr-2 self-center"></i> Hitung Biaya
+        </button>
+        <button onclick="openBookingWizard()" class="px-5 py-2.5 text-xs font-bold rounded-lg text-slate-950 bg-gradient-to-r from-emerald-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 shadow-md shadow-emerald-500/20 active:scale-95 transition-all">
+          Pesan Layanan
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="pt-20">
+    <!-- Hero Section -->
+    <section class="relative min-h-[90vh] flex items-center justify-center overflow-hidden py-16">
+      <!-- Glow background circles -->
+      <div class="absolute -top-40 -left-40 w-96 h-96 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute top-1/2 -right-40 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-20 left-1/3 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+        <!-- Floating Announcement Pill -->
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/90 border border-emerald-500/40 text-xs font-medium text-slate-300 mb-8 animate-float">
+          <span class="flex h-2 w-2 relative">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span class="text-emerald-400 font-semibold">Solusi Anti-Beban Sewa:</span> Hemat biaya kamar saat libur & rotasi kerja
+        </div>
+
+        <!-- Headline & Subtitle -->
+        <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.15] mb-6">
+          Smart Micro-Storage & <br>
+          <span class="bg-gradient-to-r from-emerald-400 via-cyan-400 to-teal-300 bg-clip-text text-transparent">
+            Seamless Relocation
+          </span>
+        </h1>
+        <p class="max-w-2xl mx-auto text-base sm:text-lg text-slate-400 font-normal leading-relaxed mb-10">
+          Titip barang aman tanpa bayar kos kosong jutaan rupiah saat libur semester atau magang. Nikmati layanan jemput-simpan hemat bergaransi segel fisik & digital hash unik.
+        </p>
+
+        <!-- CTA Buttons -->
+        <div class="flex flex-wrap items-center justify-center gap-4 mb-16">
+          <button onclick="scrollToSection('simulator')" class="px-7 py-3.5 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
+            <i class="fa-solid fa-boxes-stacked"></i> Simulasikan Tumpukan Barang
+          </button>
+          <button onclick="scrollToSection('vault-tracker')" class="px-6 py-3.5 rounded-xl font-semibold text-sm bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-200 hover:bg-slate-800 transition-all flex items-center gap-2">
+            <i class="fa-solid fa-shield-halved text-cyan-400"></i> Cek Demo Segel Digital
+          </button>
+          <button onclick="openBookingWizard()" class="px-6 py-3.5 rounded-xl font-semibold text-sm text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all flex items-center gap-2">
+            <i class="fa-solid fa-bolt text-amber-400"></i> Booking Kilat
+          </button>
+        </div>
+
+        <!-- Animated Stats Counter Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+          <div class="glass-card p-5 rounded-2xl border border-slate-800">
+            <div class="text-2xl sm:text-3xl font-extrabold text-emerald-400" id="stat-boxes">0</div>
+            <div class="text-xs text-slate-400 mt-1 font-medium">Boks Tersegel Aman</div>
+          </div>
+          <div class="glass-card p-5 rounded-2xl border border-slate-800">
+            <div class="text-2xl sm:text-3xl font-extrabold text-cyan-400" id="stat-savings">0</div>
+            <div class="text-xs text-slate-400 mt-1 font-medium">Uang Kos Dihemat</div>
+          </div>
+          <div class="glass-card p-5 rounded-2xl border border-slate-800">
+            <div class="text-2xl sm:text-3xl font-extrabold text-amber-400" id="stat-security">0%</div>
+            <div class="text-xs text-slate-400 mt-1 font-medium">Integritas Segel Utuh</div>
+          </div>
+          <div class="glass-card p-5 rounded-2xl border border-slate-800">
+            <div class="text-2xl sm:text-3xl font-extrabold text-purple-400" id="stat-cities">0</div>
+            <div class="text-xs text-slate-400 mt-1 font-medium">Klaster Kampus & Kota</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Feature 1: Interactive Volume Estimator & 3D/Isometric Pallet Visualizer -->
+    <section id="simulator" class="py-20 border-t border-slate-800/60 relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center max-w-3xl mx-auto mb-14">
+          <span class="text-xs font-bold tracking-widest text-emerald-400 uppercase bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">Fitur Cerdas #1</span>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-3">Interactive Volume Estimator & Stacker</h2>
+          <p class="text-slate-400 text-sm sm:text-base mt-2">
+            Tambahkan barang bawaan Anda dan saksikan bagaimana boks Anda ditata di atas palet berstandar industri dengan pengawasan kelembapan mikro.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          <!-- Left Column: Item Selector & Duration Controls (7 Cols) -->
+          <div class="lg:col-span-7 space-y-6">
+            
+            <!-- Service Mode Tabs -->
+            <div class="glass-card p-2 rounded-2xl grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <button onclick="setServiceTier('valet')" id="btn-tier-valet" class="tier-tab-btn py-2.5 px-3 rounded-xl text-xs font-bold text-slate-900 bg-gradient-to-r from-emerald-400 to-cyan-400 transition-all flex flex-col items-center gap-1">
+                <i class="fa-solid fa-truck-ramp-box"></i>
+                <span>Valet Storage</span>
+              </button>
+              <button onclick="setServiceTier('uni')" id="btn-tier-uni" class="tier-tab-btn py-2.5 px-3 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-all flex flex-col items-center gap-1">
+                <i class="fa-solid fa-building-user"></i>
+                <span>Uni Storage</span>
+              </button>
+              <button onclick="setServiceTier('host')" id="btn-tier-host" class="tier-tab-btn py-2.5 px-3 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-all flex flex-col items-center gap-1">
+                <i class="fa-solid fa-house-signal"></i>
+                <span>Host-Transit</span>
+              </button>
+              <button onclick="setServiceTier('reloq')" id="btn-tier-reloq" class="tier-tab-btn py-2.5 px-3 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-all flex flex-col items-center gap-1">
+                <i class="fa-solid fa-van-shuttle"></i>
+                <span>Reloq Only</span>
+              </button>
+            </div>
+
+            <!-- Item Quantity Counters -->
+            <div class="glass-card p-6 rounded-3xl border border-slate-800 space-y-4">
+              <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center justify-between">
+                <span>Pilih Barang Bawaan</span>
+                <span class="text-xs text-emerald-400 font-normal" id="totalItemsCount">0 Item Terpilih</span>
+              </h3>
+
+              <!-- Item 1: Tote Box 50L -->
+              <div class="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 transition-all">
+                <div class="flex items-center gap-3.5">
+                  <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-base">
+                    <i class="fa-solid fa-box"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-semibold text-white">Boks Standar Tote 50L</h4>
+                    <p class="text-xs text-slate-400">Pakaian, buku, dokumen naskah (Ukuran 60x40x35cm)</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <button onclick="updateItemQty('tote', -1)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold active:scale-90 transition-all flex items-center justify-center">-</button>
+                  <span id="qty-tote" class="w-6 text-center font-bold text-sm text-white">0</span>
+                  <button onclick="updateItemQty('tote', 1)" class="w-8 h-8 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold active:scale-90 transition-all flex items-center justify-center">+</button>
+                </div>
+              </div>
+
+              <!-- Item 2: Koper Besar -->
+              <div class="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 transition-all">
+                <div class="flex items-center gap-3.5">
+                  <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-base">
+                    <i class="fa-solid fa-suitcase-rolling"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-semibold text-white">Koper Besar (28-32 inch)</h4>
+                    <p class="text-xs text-slate-400">Hardcase/Softcase travel bag besar perantau</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <button onclick="updateItemQty('luggage', -1)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold active:scale-90 transition-all flex items-center justify-center">-</button>
+                  <span id="qty-luggage" class="w-6 text-center font-bold text-sm text-white">0</span>
+                  <button onclick="updateItemQty('luggage', 1)" class="w-8 h-8 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold active:scale-90 transition-all flex items-center justify-center">+</button>
+                </div>
+              </div>
+
+              <!-- Item 3: Kulkas Mini / Dispenser -->
+              <div class="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 transition-all">
+                <div class="flex items-center gap-3.5">
+                  <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-base">
+                    <i class="fa-solid fa-snowflake"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-semibold text-white">Kulkas Mini / Dispenser</h4>
+                    <p class="text-xs text-slate-400">Elektronik pendingin 50L-100L (wajib kuras kering)</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <button onclick="updateItemQty('fridge', -1)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold active:scale-90 transition-all flex items-center justify-center">-</button>
+                  <span id="qty-fridge" class="w-6 text-center font-bold text-sm text-white">0</span>
+                  <button onclick="updateItemQty('fridge', 1)" class="w-8 h-8 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold active:scale-90 transition-all flex items-center justify-center">+</button>
+                </div>
+              </div>
+
+              <!-- Item 4: Kasur Lipat / Bed Roll -->
+              <div class="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 transition-all">
+                <div class="flex items-center gap-3.5">
+                  <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-base">
+                    <i class="fa-solid fa-mattress-pillow"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-semibold text-white">Kasur Lipat / Foam Roll</h4>
+                    <p class="text-xs text-slate-400">Kasur busa gulung/lipat dibungkus plastik pelindung</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <button onclick="updateItemQty('mattress', -1)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold active:scale-90 transition-all flex items-center justify-center">-</button>
+                  <span id="qty-mattress" class="w-6 text-center font-bold text-sm text-white">0</span>
+                  <button onclick="updateItemQty('mattress', 1)" class="w-8 h-8 rounded-lg bg-purple-500 hover:bg-purple-400 text-slate-950 font-bold active:scale-90 transition-all flex items-center justify-center">+</button>
+                </div>
+              </div>
+
+              <!-- Item 5: Monitor PC / Delicate Box -->
+              <div class="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 transition-all">
+                <div class="flex items-center gap-3.5">
+                  <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-base">
+                    <i class="fa-solid fa-desktop"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-semibold text-white">Monitor PC / Fragile Kit</h4>
+                    <p class="text-xs text-slate-400">Layar 24-34 inch dalam boks kardus asli berbusa</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <button onclick="updateItemQty('monitor', -1)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold active:scale-90 transition-all flex items-center justify-center">-</button>
+                  <span id="qty-monitor" class="w-6 text-center font-bold text-sm text-white">0</span>
+                  <button onclick="updateItemQty('monitor', 1)" class="w-8 h-8 rounded-lg bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold active:scale-90 transition-all flex items-center justify-center">+</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Duration Slider (Hidden if Relocation Only) -->
+            <div id="durationCard" class="glass-card p-6 rounded-3xl border border-slate-800">
+              <div class="flex items-center justify-between mb-4">
+                <label class="text-sm font-bold text-slate-200 uppercase tracking-wider">Durasi Penitipan</label>
+                <span id="durationDisplay" class="text-sm font-extrabold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">2 Bulan</span>
+              </div>
+              <input type="range" id="durationSlider" min="1" max="6" value="2" step="1" oninput="updateDuration(this.value)" class="w-full accent-emerald-400 bg-slate-800 h-2 rounded-lg cursor-pointer">
+              <div class="flex justify-between text-[11px] text-slate-400 mt-2 font-medium">
+                <span>1 Bln (Libur Pendek)</span>
+                <span>2 Bln (Libur Smt)</span>
+                <span>3 Bln (Magang)</span>
+                <span>6 Bln (Exchange/KKN)</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Right Column: Visualizer Canvas & Savings Analysis (5 Cols) -->
+          <div class="lg:col-span-5 space-y-6">
+            
+            <!-- Isometric Pallet Canvas Visualizer -->
+            <div class="glass-card p-5 rounded-3xl border border-slate-800 relative overflow-hidden">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-slate-300 flex items-center gap-2">
+                  <i class="fa-solid fa-layer-group text-emerald-400"></i> Pallet Stacking Visualizer
+                </span>
+                <span id="palletFillBadge" class="text-[10px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">Palet Kosong</span>
+              </div>
+              
+              <!-- Canvas Area -->
+              <div class="w-full h-64 bg-[#060911] rounded-2xl border border-slate-800/80 relative flex items-center justify-center overflow-hidden">
+                <canvas id="palletCanvas" width="450" height="260" class="w-full h-full object-contain"></canvas>
+                <!-- Watermark Info -->
+                <div class="absolute bottom-2 right-3 text-[10px] text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded pointer-events-none">
+                  Standar Palet 120 x 100 cm
+                </div>
+              </div>
+
+              <div class="text-center mt-3">
+                <p class="text-xs text-slate-400" id="canvasHint">Tekan tombol <span class="text-emerald-400 font-bold">(+)</span> pada barang untuk menyusun muatan secara real-time.</p>
+              </div>
+            </div>
+
+            <!-- Price Breakdown & Comparison Card -->
+            <div class="glass-card p-6 rounded-3xl border border-emerald-500/30 bg-gradient-to-b from-[#111827] to-[#080c16] relative overflow-hidden">
+              <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+              <div class="flex items-start justify-between pb-4 border-b border-slate-800">
+                <div>
+                  <span class="text-xs text-slate-400 font-medium">Estimasi Biaya StashPoint</span>
+                  <div class="text-3xl font-black text-white mt-0.5" id="totalPriceDisplay">Rp 0</div>
+                </div>
+                <div class="text-right">
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/30 block" id="badgeSavingsPercent">Hemat 0%</span>
+                  <span class="text-[11px] text-slate-400 block mt-1" id="selectedTierLabel">Valet Storage</span>
+                </div>
+              </div>
+
+              <!-- Comparison Row -->
+              <div class="py-4 space-y-2 text-xs">
+                <div class="flex justify-between text-slate-400">
+                  <span>Jika tetap sewa kamar kos kosong (avg Rp 1.2jt/bln):</span>
+                  <span id="costKosDisplay" class="font-semibold text-rose-400 line-through">Rp 2.400.000</span>
+                </div>
+                <div class="flex justify-between text-emerald-400 font-bold">
+                  <span>Potensi Uang Saku yang Dihemat:</span>
+                  <span id="savedMoneyDisplay">Rp 0</span>
+                </div>
+              </div>
+
+              <button onclick="proceedToBookingFromEstimator()" class="w-full py-3.5 rounded-xl text-xs font-extrabold uppercase tracking-wider bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2">
+                <i class="fa-solid fa-lock"></i> Kunci Kuota & Buat Reservasi
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Feature 2: Interactive Digital Tamper-Evident Seal & Vault Tracker Demo -->
+    <section id="vault-tracker" class="py-20 bg-slate-950/70 border-t border-slate-800/80 relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center max-w-3xl mx-auto mb-14">
+          <span class="text-xs font-bold tracking-widest text-cyan-400 uppercase bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">Fitur Khas StashPoint #2</span>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-3">Digital Tamper Seal & Live Vault Telemetry</h2>
+          <p class="text-slate-400 text-sm sm:text-base mt-2">
+            Setiap boks dilindungi segel fisik bernomor seri + verifikasi kriptografi hash. Anda dapat memantau status segel dan kondisi gudang secara transparan.
+          </p>
+        </div>
+
+        <div class="glass-card max-w-4xl mx-auto p-6 sm:p-8 rounded-3xl border border-slate-800">
+          
+          <!-- Search & Demo Preset Selector -->
+          <div class="flex flex-col sm:flex-row gap-3 items-center justify-between pb-6 border-b border-slate-800">
+            <div class="relative w-full sm:w-80">
+              <i class="fa-solid fa-barcode absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <input type="text" id="trackingInput" value="STP-9842-SUB" class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white font-mono focus:outline-none focus:border-cyan-400">
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+              <span class="text-xs text-slate-400 font-medium">Contoh Demo:</span>
+              <button onclick="setTrackDemo('STP-9842-SUB')" class="px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700">#SUB-ITS</button>
+              <button onclick="setTrackDemo('STP-4410-JOG')" class="px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700">#JOG-UGM</button>
+              <button onclick="setTrackDemo('STP-7721-BDG')" class="px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700">#BDG-ITB</button>
+            </div>
+          </div>
+
+          <!-- Main Interactive Seal Simulator Display -->
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-8 mt-6 items-center">
+            
+            <!-- Left: Digital Seal Card with Laser Scanner (5 Cols) -->
+            <div class="md:col-span-5">
+              <div id="sealCardBox" class="relative rounded-2xl bg-gradient-to-b from-[#111928] to-[#0a0e1a] p-5 border border-cyan-500/30 shadow-2xl overflow-hidden">
+                
+                <!-- Laser beam element (active during scan) -->
+                <div id="laserBeam" class="hidden laser-line animate-laser"></div>
+
+                <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+                  <span class="text-[10px] tracking-widest uppercase font-bold text-cyan-400">Tamper-Proof Tag</span>
+                  <span id="sealStatusBadge" class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                    <i class="fa-solid fa-shield-check mr-1"></i> UNBROKEN
+                  </span>
+                </div>
+
+                <!-- Visual Barcode and Hash -->
+                <div class="my-4 text-center">
+                  <!-- Simulated Barcode Graphic -->
+                  <div class="h-14 bg-white/95 rounded px-2 py-1.5 flex items-center justify-center gap-1 mx-auto max-w-[220px]">
+                    <div class="w-1 h-10 bg-black"></div>
+                    <div class="w-2 h-10 bg-black"></div>
+                    <div class="w-0.5 h-10 bg-black"></div>
+                    <div class="w-1.5 h-10 bg-black"></div>
+                    <div class="w-1 h-10 bg-black"></div>
+                    <div class="w-2.5 h-10 bg-black"></div>
+                    <div class="w-0.5 h-10 bg-black"></div>
+                    <div class="w-1 h-10 bg-black"></div>
+                    <div class="w-2 h-10 bg-black"></div>
+                    <div class="w-1 h-10 bg-black"></div>
+                    <div class="w-0.5 h-10 bg-black"></div>
+                    <div class="w-2 h-10 bg-black"></div>
+                  </div>
+                  <div class="mt-2 font-mono text-xs text-slate-300 font-bold" id="sealTagSerial">SN: STP-SEC-9842881</div>
+                  <div class="text-[9px] text-slate-400 font-mono break-all mt-0.5" id="sealHashKey">HASH: e3b0c44298fc1c149afbf4c8996fb92427ae41e4</div>
+                </div>
+
+                <!-- Seal Metadata -->
+                <div class="space-y-1.5 text-[11px] text-slate-400 pt-2 border-t border-slate-800">
+                  <div class="flex justify-between">
+                    <span>Pemilik:</span>
+                    <span class="text-white font-medium" id="sealOwner">Rian Pratama</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Waktu Segel:</span>
+                    <span class="text-white font-mono" id="sealTimestamp">18 Jul 2026, 09:30 WIB</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Petugas Pickup:</span>
+                    <span class="text-white font-medium" id="sealOfficer">Kru Arya (#OPS-44)</span>
+                  </div>
+                </div>
+
+                <!-- Trigger Scan Action -->
+                <button onclick="triggerLaserScan()" id="btnScanSeal" class="mt-4 w-full py-2.5 rounded-xl text-xs font-bold bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/30 active:scale-95 transition-all flex items-center justify-center gap-2">
+                  <i class="fa-solid fa-qrcode"></i> <span id="btnScanText">Uji Integritas Segel</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Right: Real-time Vault Telemetry & Custody Timeline (7 Cols) -->
+            <div class="md:col-span-7 space-y-6">
+              
+              <!-- IoT Environmental Sensors (Gudang Utama) -->
+              <div>
+                <h4 class="text-xs font-bold uppercase text-slate-400 tracking-wider mb-3 flex items-center gap-2">
+                  <i class="fa-solid fa-microchip text-emerald-400"></i> Live Telemetri Ruang Simpan
+                </h4>
+                <div class="grid grid-cols-3 gap-3">
+                  <div class="p-3 rounded-2xl bg-slate-900 border border-slate-800 text-center">
+                    <span class="text-[10px] text-slate-400 block font-medium">Suhu Vault</span>
+                    <span class="text-lg font-black text-emerald-400 mt-0.5 block" id="telemetryTemp">23.8°C</span>
+                    <span class="text-[9px] text-slate-400">Optimal (AC Stabil)</span>
+                  </div>
+                  <div class="p-3 rounded-2xl bg-slate-900 border border-slate-800 text-center">
+                    <span class="text-[10px] text-slate-400 block font-medium">Kelembaban (RH)</span>
+                    <span class="text-lg font-black text-cyan-400 mt-0.5 block" id="telemetryHumidity">48%</span>
+                    <span class="text-[9px] text-slate-400">Anti-Jamur Aman</span>
+                  </div>
+                  <div class="p-3 rounded-2xl bg-slate-900 border border-slate-800 text-center">
+                    <span class="text-[10px] text-slate-400 block font-medium">Sensor Hama</span>
+                    <span class="text-lg font-black text-amber-400 mt-0.5 block">0 HAMA</span>
+                    <span class="text-[9px] text-slate-400">Ultrasonic Active</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Custody Timeline -->
+              <div>
+                <h4 class="text-xs font-bold uppercase text-slate-400 tracking-wider mb-3 flex items-center gap-2">
+                  <i class="fa-solid fa-route text-cyan-400"></i> Chain of Custody Timeline
+                </h4>
+                <div class="space-y-3 text-xs">
+                  
+                  <div class="flex items-start gap-3">
+                    <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                      <i class="fa-solid fa-check"></i>
+                    </div>
+                    <div>
+                      <div class="font-bold text-white">Penjemputan di Indekos & Pemasangan Segel Fisik</div>
+                      <div class="text-[11px] text-slate-400">Kec. Sukolilo, Surabaya — Disaksikan pemilik barang</div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-start gap-3">
+                    <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                      <i class="fa-solid fa-check"></i>
+                    </div>
+                    <div>
+                      <div class="font-bold text-white">Transit Rute Klaster Timur & Audit Masuk Gudang</div>
+                      <div class="text-[11px] text-slate-400">Gudang Suburban Krian Hub — Penempatan di Palet #PLT-04</div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-start gap-3">
+                    <div class="w-6 h-6 rounded-full bg-cyan-500 text-slate-950 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5 animate-pulse">
+                      <i class="fa-solid fa-boxes-packing"></i>
+                    </div>
+                    <div>
+                      <div class="font-bold text-cyan-400">Dalam Masa Simpan Aman Terkendali (In-Vault)</div>
+                      <div class="text-[11px] text-slate-400">CCTV 24 Jam Aktif & monitoring harian</div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-start gap-3 opacity-50">
+                    <div class="w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                      <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-slate-300">Jadwal Pengantaran Kembali ke Kos Baru</div>
+                      <div class="text-[11px] text-slate-400">Estimasi jadwal: 28 Agustus 2026 (Menjelang Semester Ganjil)</div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Feature 3: Service Tier Comparison -->
+    <section id="tiers" class="py-20 border-t border-slate-800/80 relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center max-w-3xl mx-auto mb-14">
+          <span class="text-xs font-bold tracking-widest text-emerald-400 uppercase bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">Struktur Pilihan</span>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-3">Skema Layanan Fleksibel & Terjangkau</h2>
+          <p class="text-slate-400 text-sm sm:text-base mt-2">
+            Pilih metode penyimpanan yang paling pas dengan anggaran, lokasi, dan kebutuhan mobilitas Anda sebagai perantau.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          
+          <!-- Card 1: Valet Storage (The Anchor) -->
+          <div class="glass-card p-6 rounded-3xl border border-emerald-500/40 relative flex flex-col justify-between glass-card-hover">
+            <div class="absolute -top-3 left-6">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider bg-emerald-400 text-slate-950 px-3 py-1 rounded-full shadow-md">
+                Paling Favorit / Value
+              </span>
+            </div>
+
+            <div class="pt-2">
+              <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl mb-4">
+                <i class="fa-solid fa-truck-ramp-box"></i>
+              </div>
+              <h3 class="text-xl font-bold text-white">Valet Storage</h3>
+              <p class="text-xs text-slate-400 mt-1 min-h-[36px]">Gudang suburban berbiaya rendah dengan layanan jemput-antar door-to-door.</p>
+
+              <div class="my-5">
+                <span class="text-2xl font-black text-white">Mulai Rp 35rb</span>
+                <span class="text-xs text-slate-400">/boks/bulan</span>
+              </div>
+
+              <ul class="space-y-2.5 text-xs text-slate-300">
+                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Gratis jemput rute klaster</li>
+                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Palet kayu anti-lembab & CCTV</li>
+                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Segel bernomor serial unik</li>
+                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Hemat 75% vs bayar kos kosong</li>
+              </ul>
+            </div>
+
+            <button onclick="selectTierAndOpenWizard('valet')" class="mt-6 w-full py-2.5 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 active:scale-95 transition-all">
+              Pilih Valet Storage
+            </button>
+          </div>
+
+          <!-- Card 2: Uni Storage -->
+          <div class="glass-card p-6 rounded-3xl border border-slate-800 relative flex flex-col justify-between glass-card-hover">
+            <div class="absolute -top-3 left-6">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider bg-cyan-500 text-slate-950 px-3 py-1 rounded-full shadow-md">
+                Akses Kilat
+              </span>
+            </div>
+
+            <div class="pt-2">
+              <div class="w-12 h-12 rounded-2xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl mb-4">
+                <i class="fa-solid fa-building-user"></i>
+              </div>
+              <h3 class="text-xl font-bold text-white">Uni Storage</h3>
+              <p class="text-xs text-slate-400 mt-1 min-h-[36px]">Hub mikro sangat dekat kampus/kantor. Fleksibel ambil barang kapan saja.</p>
+
+              <div class="my-5">
+                <span class="text-2xl font-black text-white">Mulai Rp 55rb</span>
+                <span class="text-xs text-slate-400">/boks/bulan</span>
+              </div>
+
+              <ul class="space-y-2.5 text-xs text-slate-300">
+                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-cyan-400"></i> Radius &lt;1.5 KM dari kampus</li>
+                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-cyan-400"></i> Akses ambil barang H-1 notice</li>
+                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-cyan-400"></i> Ruangan ber-AC / suhu terkontrol</li>
+                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-cyan-400"></i> Ideal untuk barang berharga</li>
+              </ul>
+            </div>
+
+            <button onclick="selectTierAndOpenWizard('uni')" class="mt-6 w-full py-2.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-cyan-400 active:scale-95 transition-all">
+              Pilih Uni Storage
+            </button>
+          </div>
+
+          <!-- Card 3: Host-Transit -->
+          <div class="glass-card p-6 rounded-3xl border border-slate-800 relative flex flex-col justify-between glass-card-hover">
+            <div class="absolute -top-3 left-6">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider bg-amber-500 text-slate-950 px-3 py-1 rounded-full shadow-md">
+                Paling Murah
+              </span>
+            </div>
+
+            <div class="pt-2">
+              <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl mb-4">
+                <i class="fa-solid fa-house-signal"></i>
+              </div>
+              <h3 class="text-xl font-bold text-white">Host-Transit</h3>
+              <p class="text-xs text-slate-400 mt-1 min-h-[36px]">Titip di ruang ekstra kontrakan mahasiswa yang tidak mudik. Super hemat.</p>
+
+              <div class="my-5">
+                <span class="text-2xl font-black text-white">Mulai Rp 28rb</span>
+                <span class="text-xs text-slate-400">/boks/bulan</span>
+              </div>
+
+              <ul class="space-y-2.5 text-xs text-slate-300">
+                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-amber-400"></i> Satu lingkungan RT/RW kos</li>
+                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-amber-400"></i> Wajib segel bernomor serial</li>
+                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-amber-400"></i> Kuota musiman terbatas</li>
+                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-amber-400"></i> Dukung ekonomi sesama teman</li>
+              </ul>
+            </div>
+
+            <button onclick="selectTierAndOpenWizard('host')" class="mt-6 w-full py-2.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-amber-400 active:scale-95 transition-all">
+              Pilih Host-Transit
+            </button>
+          </div>
+
+          <!-- Card 4: Relocation Only -->
+          <div class="glass-card p-6 rounded-3xl border border-slate-800 relative flex flex-col justify-between glass-card-hover">
+            <div class="absolute -top-3 left-6">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider bg-purple-500 text-slate-950 px-3 py-1 rounded-full shadow-md">
+                Langsung Pindah
+              </span>
+            </div>
+
+            <div class="pt-2">
+              <div class="w-12 h-12 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-xl mb-4">
+                <i class="fa-solid fa-van-shuttle"></i>
+              </div>
+              <h3 class="text-xl font-bold text-white">Reloq Direct</h3>
+              <p class="text-xs text-slate-400 mt-1 min-h-[36px]">Jasa angkut langsung antar-kos tanpa simpan gudang. Cepat & beres.</p>
+
+              <div class="my-5">
+                <span class="text-2xl font-black text-white">Mulai Rp 120rb</span>
+                <span class="text-xs text-slate-400">/trip pindahan</span>
+              </div>
+
+              <ul class="space-y-2.5 text-xs text-slate-300">
+                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-purple-400"></i> Armada Van / Blind Pickup</li>
+                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-purple-400"></i> Termasuk bantuan angkut 1 kru</li>
+                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-purple-400"></i> Perlindungan terpal & tali webbing</li>
+                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-purple-400"></i> Tanpa pusing sewa pick-up mahal</li>
+              </ul>
+            </div>
+
+            <button onclick="selectTierAndOpenWizard('reloq')" class="mt-6 w-full py-2.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-purple-400 active:scale-95 transition-all">
+              Pilih Reloq Direct
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Feature 4: Perantau Community & FAQ Hub -->
+    <section id="community" class="py-20 bg-slate-950/60 border-t border-slate-800/80 relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          
+          <!-- Community Column (6 Cols) -->
+          <div class="lg:col-span-6 space-y-6">
+            <span class="text-xs font-bold tracking-widest text-emerald-400 uppercase bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">Jejaring Perantau</span>
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-white">Grup Komunitas & Info Info Kos Seputar Kampus</h2>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Jangan bingung sendirian di tanah rantau. Bergabunglah dengan grup Telegram & WhatsApp resmi StashPoint per kota untuk bertukar informasi over-kontrak kamar kos, rekomendasi laundry kiloan, hingga info tebengan barang.
+            </p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <a href="javascript:void(0)" onclick="showToast('Membuka grup Telegram StashPoint Surabaya...', 'info')" class="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-emerald-500/50 transition-all">
+                <div class="flex items-center gap-3">
+                  <i class="fa-brands fa-telegram text-cyan-400 text-xl"></i>
+                  <div>
+                    <h4 class="text-xs font-bold text-white">Surabaya Rantau</h4>
+                    <p class="text-[10px] text-slate-400">ITS, Unair, Unesa (3.2k Member)</p>
+                  </div>
+                </div>
+                <i class="fa-solid fa-arrow-up-right-from-square text-xs text-slate-400"></i>
+              </a>
+
+              <a href="javascript:void(0)" onclick="showToast('Membuka grup WhatsApp StashPoint Malang...', 'info')" class="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-emerald-500/50 transition-all">
+                <div class="flex items-center gap-3">
+                  <i class="fa-brands fa-whatsapp text-emerald-400 text-xl"></i>
+                  <div>
+                    <h4 class="text-xs font-bold text-white">Malang Perantau Hub</h4>
+                    <p class="text-[10px] text-slate-400">UB, UM, UMM (2.8k Member)</p>
+                  </div>
+                </div>
+                <i class="fa-solid fa-arrow-up-right-from-square text-xs text-slate-400"></i>
+              </a>
+
+              <a href="javascript:void(0)" onclick="showToast('Membuka grup Telegram StashPoint Jogja...', 'info')" class="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-emerald-500/50 transition-all">
+                <div class="flex items-center gap-3">
+                  <i class="fa-brands fa-telegram text-cyan-400 text-xl"></i>
+                  <div>
+                    <h4 class="text-xs font-bold text-white">Jogja Student Circle</h4>
+                    <p class="text-[10px] text-slate-400">UGM, UNY, UMY (4.1k Member)</p>
+                  </div>
+                </div>
+                <i class="fa-solid fa-arrow-up-right-from-square text-xs text-slate-400"></i>
+              </a>
+
+              <a href="javascript:void(0)" onclick="showToast('Membuka grup WhatsApp StashPoint Bandung...', 'info')" class="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-emerald-500/50 transition-all">
+                <div class="flex items-center gap-3">
+                  <i class="fa-brands fa-whatsapp text-emerald-400 text-xl"></i>
+                  <div>
+                    <h4 class="text-xs font-bold text-white">Bandung Student Base</h4>
+                    <p class="text-[10px] text-slate-400">ITB, Unpad, Tel-U (3.5k Member)</p>
+                  </div>
+                </div>
+                <i class="fa-solid fa-arrow-up-right-from-square text-xs text-slate-400"></i>
+              </a>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-slate-300 flex items-center gap-3">
+              <i class="fa-solid fa-shield-cat text-emerald-400 text-lg"></i>
+              <span>Seluruh grup diawasi moderator admin resmi untuk menjamin keamanan dari penipuan atau joki ilegal.</span>
+            </div>
+          </div>
+
+          <!-- FAQ Accordion (6 Cols) -->
+          <div id="faq" class="lg:col-span-6 space-y-3">
+            <h3 class="text-lg font-bold text-white mb-4">Pertanyaan yang Sering Diajukan (FAQ)</h3>
+
+            <!-- FAQ Item 1 -->
+            <div class="glass-card rounded-2xl border border-slate-800 overflow-hidden">
+              <button onclick="toggleFaq(1)" class="w-full p-4 text-left flex justify-between items-center text-xs font-bold text-white hover:text-emerald-400 transition-colors">
+                <span>Bagaimana jika segel rusak atau barang saya hilang?</span>
+                <i id="faqIcon-1" class="fa-solid fa-chevron-down text-slate-400 transition-transform"></i>
+              </button>
+              <div id="faqAnswer-1" class="hidden px-4 pb-4 text-xs text-slate-400 leading-relaxed border-t border-slate-800/60 pt-3">
+                Semua boks dilengkapi nomor seri segel anti-rusak (*tamper-evident*) dan difoto saat penjemputan. Jika nomor segel tidak cocok atau terputus saat diterima kembali, asuransi mikro perlindungan kami mencakup ganti rugi hingga Rp 2.500.000 per boks standar.
+              </div>
+            </div>
+
+            <!-- FAQ Item 2 -->
+            <div class="glass-card rounded-2xl border border-slate-800 overflow-hidden">
+              <button onclick="toggleFaq(2)" class="w-full p-4 text-left flex justify-between items-center text-xs font-bold text-white hover:text-emerald-400 transition-colors">
+                <span>Kapan jadwal rute penjemputan klaster dilakukan?</span>
+                <i id="faqIcon-2" class="fa-solid fa-chevron-down text-slate-400 transition-transform"></i>
+              </button>
+              <div id="faqAnswer-2" class="hidden px-4 pb-4 text-xs text-slate-400 leading-relaxed border-t border-slate-800/60 pt-3">
+                Penjemputan terjadwal dilakukan per sektor wilayah (misal Kampus Timur setiap Selasa & Kamis, Kampus Barat setiap Rabu & Sabtu). Anda cukup memilih slot jam yang tersedia saat melakukan pemesanan.
+              </div>
+            </div>
+
+            <!-- FAQ Item 3 -->
+            <div class="glass-card rounded-2xl border border-slate-800 overflow-hidden">
+              <button onclick="toggleFaq(3)" class="w-full p-4 text-left flex justify-between items-center text-xs font-bold text-white hover:text-emerald-400 transition-colors">
+                <span>Apakah saya bisa memperpanjang durasi jika rencana balik berubah?</span>
+                <i id="faqIcon-3" class="fa-solid fa-chevron-down text-slate-400 transition-transform"></i>
+              </button>
+              <div id="faqAnswer-3" class="hidden px-4 pb-4 text-xs text-slate-400 leading-relaxed border-t border-slate-800/60 pt-3">
+                Bisa! Anda cukup mengajukan perpanjangan melalui WhatsApp helpdesk kami minimal H-3 sebelum tanggal jadwal serah-terima awal dengan tarif prorata bulanan yang sama tanpa denda penalti.
+              </div>
+            </div>
+
+            <!-- FAQ Item 4 -->
+            <div class="glass-card rounded-2xl border border-slate-800 overflow-hidden">
+              <button onclick="toggleFaq(4)" class="w-full p-4 text-left flex justify-between items-center text-xs font-bold text-white hover:text-emerald-400 transition-colors">
+                <span>Bagaimana jika saya pindah ke kamar kos baru yang berbeda?</span>
+                <i id="faqIcon-4" class="fa-solid fa-chevron-down text-slate-400 transition-transform"></i>
+              </button>
+              <div id="faqAnswer-4" class="hidden px-4 pb-4 text-xs text-slate-400 leading-relaxed border-t border-slate-800/60 pt-3">
+                Ini adalah keunggulan utama StashPoint! Barang dijemput dari kos lama Anda, lalu saat Anda kembali dari kampung atau magang, kami antarkan langsung ke alamat kamar kos baru Anda tanpa biaya tambahan (selama dalam radius kota yang sama).
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 bg-[#060911] py-12 text-slate-400 text-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black">
+          <i class="fa-solid fa-boxes-stacked"></i>
+        </div>
+        <div>
+          <span class="font-extrabold text-white text-sm">StashPoint Indonesia</span>
+          <p class="text-[10px] text-slate-400">Pioneer On-Demand Micro-Warehousing for Perantau Mobility</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-6">
+        <a href="#simulator" class="hover:text-white transition-colors">Estimator</a>
+        <a href="#vault-tracker" class="hover:text-white transition-colors">Segel Digital</a>
+        <a href="#tiers" class="hover:text-white transition-colors">Pilihan Layanan</a>
+        <a href="#community" class="hover:text-white transition-colors">Komunitas</a>
+      </div>
+
+      <div class="text-[11px] text-slate-400">
+        © 2026 StashPoint Inc. Dikembangkan untuk efisiensi hidup anak rantau.
+      </div>
+    </div>
+  </footer>
+
+  <!-- Booking Wizard Multi-Step Modal -->
+  <div id="bookingModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden opacity-0 transition-opacity duration-300">
+    <div class="glass-card bg-[#0e1424] border border-slate-700/80 w-full max-w-2xl rounded-3xl p-6 sm:p-8 relative shadow-2xl max-h-[92vh] overflow-y-auto">
+      
+      <!-- Close Button -->
+      <button onclick="closeBookingWizard()" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <!-- Step Indicators -->
+      <div class="flex items-center justify-between pb-6 mb-6 border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <div id="stepDot-1" class="w-8 h-8 rounded-xl bg-emerald-500 text-slate-950 font-bold flex items-center justify-center text-xs">1</div>
+          <span class="text-xs font-semibold text-white hidden sm:inline">Layanan & Muatan</span>
+        </div>
+        <div class="h-0.5 w-8 bg-slate-800"></div>
+        <div class="flex items-center gap-3">
+          <div id="stepDot-2" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-xs">2</div>
+          <span class="text-xs font-semibold text-slate-400 hidden sm:inline">Titik & Jadwal</span>
+        </div>
+        <div class="h-0.5 w-8 bg-slate-800"></div>
+        <div class="flex items-center gap-3">
+          <div id="stepDot-3" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-xs">3</div>
+          <span class="text-xs font-semibold text-slate-400 hidden sm:inline">Proteksi & Konfirmasi</span>
+        </div>
+        <div class="h-0.5 w-8 bg-slate-800"></div>
+        <div class="flex items-center gap-3">
+          <div id="stepDot-4" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-xs">4</div>
+          <span class="text-xs font-semibold text-slate-400 hidden sm:inline">Tiket Booking</span>
+        </div>
+      </div>
+
+      <!-- STEP 1: Layanan & Inventaris Ringkasan -->
+      <div id="wizardStep-1" class="wizard-step space-y-4">
+        <h3 class="text-lg font-bold text-white">Langkah 1: Konfirmasi Layanan & Muatan</h3>
+        <p class="text-xs text-slate-400">Pastikan opsi layanan dan muatan barang sudah sesuai dengan kalkulasi Anda.</p>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Skema Layanan</label>
+            <select id="modalTierSelect" onchange="syncTierFromModal(this.value)" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white">
+              <option value="valet">Valet Storage (Gudang Suburban Jemput-Antar)</option>
+              <option value="uni">Uni Storage (Dekat Kampus / Akses Cepat)</option>
+              <option value="host">Host-Transit (Mitra Komunitas Klaster Kos)</option>
+              <option value="reloq">Reloq Direct (Pindahan Langsung Tanpa Simpan)</option>
+            </select>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-xs space-y-2">
+            <div class="flex justify-between text-slate-400">
+              <span>Muatan Terpilih:</span>
+              <span id="modalSummaryItems" class="text-white font-medium">Boks Tote: 0, Koper: 0...</span>
+            </div>
+            <div class="flex justify-between text-slate-400">
+              <span>Durasi Penyimpanan:</span>
+              <span id="modalSummaryDuration" class="text-emerald-400 font-bold">2 Bulan</span>
+            </div>
+            <div class="flex justify-between text-slate-400 border-t border-slate-800 pt-2">
+              <span>Estimasi Subtotal:</span>
+              <span id="modalSummaryPrice" class="text-white font-extrabold text-sm">Rp 0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-4 flex justify-end">
+          <button onclick="goToWizardStep(2)" class="px-6 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 hover:scale-105 active:scale-95 transition-all">
+            Lanjut ke Lokasi & Jadwal <i class="fa-solid fa-arrow-right ml-1"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 2: Lokasi Penjemputan & Jadwal Batch Klaster -->
+      <div id="wizardStep-2" class="wizard-step space-y-4 hidden">
+        <h3 class="text-lg font-bold text-white">Langkah 2: Lokasi & Jadwal Penjemputan</h3>
+        <p class="text-xs text-slate-400">Pilih klaster kampus terdekat agar armada kami dapat menjemput tepat waktu.</p>
+
+        <div class="space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Nama Lengkap</label>
+              <input type="text" id="custName" placeholder="Contoh: Rian Pratama" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">No. WhatsApp Aktif</label>
+              <input type="text" id="custPhone" placeholder="081234567890" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Klaster Kampus & Kota</label>
+            <select id="custCluster" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white">
+              <option value="SUB-ITS">Surabaya — Klaster Sukolilo / Gebang (ITS, PENS)</option>
+              <option value="SUB-UNAIR">Surabaya — Klaster Mulyorejo / Dharmawangsa (UNAIR)</option>
+              <option value="MLG-UB">Malang — Klaster Lowokwaru / Suhat (UB, Polinema)</option>
+              <option value="JOG-UGM">Yogyakarta — Klaster Sleman / Pogung (UGM, UNY)</option>
+              <option value="BDG-ITB">Bandung — Klaster Coblong / Dago (ITB, Unpad)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Alamat Penjemputan (Nama Kos / No. Kamar)</label>
+            <textarea id="custAddress" rows="2" placeholder="Kos Melati Indah, Jl. Gebang Timur No. 12, Kamar 204" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Pilihan Slot Waktu Batch</label>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <label class="p-3 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer flex items-center gap-2 hover:border-emerald-500">
+                <input type="radio" name="pickupSlot" value="Pagi (09:00 - 12:00)" checked class="accent-emerald-400">
+                <span>Batch Pagi (09:00 - 12:00)</span>
+              </label>
+              <label class="p-3 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer flex items-center gap-2 hover:border-emerald-500">
+                <input type="radio" name="pickupSlot" value="Sore (14:00 - 17:30)" class="accent-emerald-400">
+                <span>Batch Sore (14:00 - 17:30)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-4 flex justify-between">
+          <button onclick="goToWizardStep(1)" class="px-5 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">
+            <i class="fa-solid fa-arrow-left mr-1"></i> Kembali
+          </button>
+          <button onclick="validateStep2AndProceed()" class="px-6 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950">
+            Lanjut ke Proteksi <i class="fa-solid fa-arrow-right ml-1"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 3: Proteksi & Konfirmasi Tambahan -->
+      <div id="wizardStep-3" class="wizard-step space-y-4 hidden">
+        <h3 class="text-lg font-bold text-white">Langkah 3: Proteksi Segel & Asuransi</h3>
+        <p class="text-xs text-slate-400">Pilih opsi keamanan ekstra untuk menjamin ketenangan selama Anda bepergian.</p>
+
+        <div class="space-y-3 text-xs">
+          <div class="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-3">
+            <input type="checkbox" id="chkInsurance" checked class="mt-1 accent-emerald-400 w-4 h-4">
+            <div>
+              <label for="chkInsurance" class="font-bold text-white block cursor-pointer">Garansi Segel Fisik & Ganti Rugi Dasar (Gratis)</label>
+              <p class="text-[11px] text-slate-400">Termasuk segel bernomor serial unik tamper-evident dan klaim hingga Rp 1.500.000 per paket.</p>
+            </div>
+          </div>
+
+          <div class="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-3">
+            <input type="checkbox" id="chkBubbleWrap" class="mt-1 accent-emerald-400 w-4 h-4">
+            <div>
+              <label for="chkBubbleWrap" class="font-bold text-white block cursor-pointer">Extra Heavy Wrapping (+Rp 15.000)</label>
+              <p class="text-[11px] text-slate-400">Lapisan bubble wrap ganda dan cling film tebal untuk barang elektronik atau kaca.</p>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-slate-300 space-y-1">
+            <div class="font-bold text-emerald-400">Tanpa DP / Bayar Saat Penjemputan</div>
+            <p class="text-[11px]">Pembayaran via QRIS, Transfer Bank, atau Tunai hanya dilakukan setelah kru kami tiba dan memasang segel di hadapan Anda.</p>
+          </div>
+        </div>
+
+        <div class="pt-4 flex justify-between">
+          <button onclick="goToWizardStep(2)" class="px-5 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">
+            <i class="fa-solid fa-arrow-left mr-1"></i> Kembali
+          </button>
+          <button onclick="generateDigitalTicketAndComplete()" class="px-6 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950">
+            Konfirmasi & Terbitkan Tiket <i class="fa-solid fa-check ml-1"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 4: Tiket Reservasi Digital (Boarding Pass Style) -->
+      <div id="wizardStep-4" class="wizard-step space-y-4 hidden">
+        <div class="text-center">
+          <div class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl mx-auto mb-2">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <h3 class="text-lg font-extrabold text-white">Reservasi Berhasil Didaftarkan!</h3>
+          <p class="text-xs text-slate-400">Tunjukkan tiket digital ini kepada kru kurir saat penjemputan.</p>
+        </div>
+
+        <!-- The Ticket Component -->
+        <div id="printableTicket" class="rounded-3xl bg-[#090d18] border border-emerald-500/40 p-5 relative overflow-hidden text-xs">
+          <div class="flex justify-between items-start border-b border-slate-800 pb-3">
+            <div>
+              <span class="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Tiket Transit StashPoint</span>
+              <div class="text-base font-black text-white font-mono" id="ticketBookingId">STP-2026-X99</div>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] text-slate-400 block">Status:</span>
+              <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">SLOT TERKUNCI</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 py-3 border-b border-slate-800 text-[11px]">
+            <div>
+              <span class="text-slate-400 block text-[10px]">Nama Pelanggan:</span>
+              <span class="font-bold text-white" id="ticketCustName">-</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px]">No. Kontak:</span>
+              <span class="font-bold text-white font-mono" id="ticketCustPhone">-</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px]">Klaster Pickup:</span>
+              <span class="font-bold text-emerald-400" id="ticketCluster">-</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px]">Jadwal Batch:</span>
+              <span class="font-bold text-white" id="ticketSlot">-</span>
+            </div>
+            <div class="col-span-2">
+              <span class="text-slate-400 block text-[10px]">Alamat Penjemputan:</span>
+              <span class="font-medium text-slate-200" id="ticketAddress">-</span>
+            </div>
+          </div>
+
+          <!-- Barcode Graphic for Ticket -->
+          <div class="pt-3 text-center">
+            <div class="h-10 bg-white/95 rounded px-2 py-1 flex items-center justify-center gap-1 mx-auto max-w-[200px]">
+              <div class="w-1 h-8 bg-black"></div>
+              <div class="w-2 h-8 bg-black"></div>
+              <div class="w-0.5 h-8 bg-black"></div>
+              <div class="w-1.5 h-8 bg-black"></div>
+              <div class="w-2.5 h-8 bg-black"></div>
+              <div class="w-1 h-8 bg-black"></div>
+              <div class="w-0.5 h-8 bg-black"></div>
+              <div class="w-2 h-8 bg-black"></div>
+            </div>
+            <span class="text-[9px] text-slate-400 font-mono mt-1 block">SIMPAN / TANGKAP LAYAR TIKET INI</span>
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button onclick="downloadTicketMock()" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-200 hover:bg-slate-700 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-download"></i> Simpan Tiket (Salin ID)
+          </button>
+          <button onclick="closeBookingWizard()" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400 flex items-center justify-center">
+            Selesai
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // State Management for App
+    const state = {
+      tier: 'valet', // valet | uni | host | reloq
+      duration: 2,   // in months
+      items: {
+        tote: 2,
+        luggage: 1,
+        fridge: 0,
+        mattress: 0,
+        monitor: 0
+      },
+      currentStep: 1
+    };
+
+    // Item Unit Base Monthly Prices (Valet Base in IDR)
+    const baseRates = {
+      tote: 35000,
+      luggage: 45000,
+      fridge: 75000,
+      mattress: 60000,
+      monitor: 50000
+    };
+
+    // Multipliers for different service tiers
+    const tierMultipliers = {
+      valet: { rate: 1.0, pickup: 20000, label: 'Valet Storage (Suburban)' },
+      uni: { rate: 1.4, pickup: 10000, label: 'Uni Storage (Dekat Kampus)' },
+      host: { rate: 0.8, pickup: 0, label: 'Host-Transit (Peer-to-Peer)' },
+      reloq: { rate: 0.0, pickup: 120000, label: 'Reloq Direct (Pindahan Saja)' }
+    };
+
+    // Simulated Tracking Database Demo Entries
+    const trackingDemoDB = {
+      'STP-9842-SUB': {
+        owner: 'Rian Pratama (ITS)',
+        serial: 'SN: STP-SEC-9842881',
+        hash: 'SHA256: 7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1f',
+        time: '18 Jul 2026, 09:30 WIB',
+        temp: '23.8°C',
+        humidity: '48%',
+        officer: 'Kru Arya (#OPS-44)',
+        city: 'Surabaya'
+      },
+      'STP-4410-JOG': {
+        owner: 'Annisa Fitri (UGM)',
+        serial: 'SN: STP-SEC-4410292',
+        hash: 'SHA256: 9e107d9d372bb6826bd81d3542a419d6a36f6d6c',
+        time: '20 Jul 2026, 14:15 WIB',
+        temp: '24.1°C',
+        humidity: '46%',
+        officer: 'Kru Bima (#OPS-12)',
+        city: 'Yogyakarta'
+      },
+      'STP-7721-BDG': {
+        owner: 'Dimas Rayhan (ITB)',
+        serial: 'SN: STP-SEC-7721004',
+        hash: 'SHA256: 3b2a8d5c4322af6113b2909192451f2d6582498b',
+        time: '22 Jul 2026, 11:00 WIB',
+        temp: '22.5°C',
+        humidity: '50%',
+        officer: 'Kru Gilang (#OPS-78)',
+        city: 'Bandung'
+      }
+    };
+
+    // Canvas Initialization & Rendering
+    const canvas = document.getElementById('palletCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function drawPallet() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      const originX = canvas.width / 2;
+      const originY = 175;
+      
+      // Isometric projection helper
+      function iso(x, y, z) {
+        return {
+          px: originX + (x - y) * 26,
+          py: originY + (x + y) * 13 - z * 24
+        };
+      }
+
+      // Draw Isometric Wooden Pallet
+      function drawPalletBase() {
+        const size = 3;
+        // Pallet Bottom Shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.beginPath();
+        const s1 = iso(-0.2, -0.2, -0.1);
+        const s2 = iso(size + 0.2, -0.2, -0.1);
+        const s3 = iso(size + 0.2, size + 0.2, -0.1);
+        const s4 = iso(-0.2, size + 0.2, -0.1);
+        ctx.moveTo(s1.px, s1.py);
+        ctx.lineTo(s2.px, s2.py);
+        ctx.lineTo(s3.px, s3.py);
+        ctx.lineTo(s4.px, s4.py);
+        ctx.closePath();
+        ctx.fill();
+
+        // Wood Pallet Planks
+        for (let i = 0; i < size; i++) {
+          const p1 = iso(0, i * 1.05, 0);
+          const p2 = iso(size, i * 1.05, 0);
+          const p3 = iso(size, i * 1.05 + 0.8, 0);
+          const p4 = iso(0, i * 1.05 + 0.8, 0);
+          
+          // Top face of wooden plank
+          ctx.fillStyle = '#b45309';
+          ctx.beginPath();
+          ctx.moveTo(p1.px, p1.py);
+          ctx.lineTo(p2.px, p2.py);
+          ctx.lineTo(p3.px, p3.py);
+          ctx.lineTo(p4.px, p4.py);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = '#78350f';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Thickness of wood plank
+          ctx.fillStyle = '#92400e';
+          ctx.beginPath();
+          ctx.moveTo(p2.px, p2.py);
+          ctx.lineTo(p2.px, p2.py + 6);
+          ctx.lineTo(p3.px, p3.py + 6);
+          ctx.lineTo(p3.px, p3.py);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+
+      drawPalletBase();
+
+      // Collect items to stack
+      const stackList = [];
+      for (let i = 0; i < state.items.tote; i++) stackList.push({ type: 'tote', color: '#10b981', label: 'TOTE' });
+      for (let i = 0; i < state.items.luggage; i++) stackList.push({ type: 'luggage', color: '#06b6d4', label: 'KOPER' });
+      for (let i = 0; i < state.items.fridge; i++) stackList.push({ type: 'fridge', color: '#f59e0b', label: 'KULKAS' });
+      for (let i = 0; i < state.items.mattress; i++) stackList.push({ type: 'mattress', color: '#a855f7', label: 'KASUR' });
+      for (let i = 0; i < state.items.monitor; i++) stackList.push({ type: 'monitor', color: '#f43f5e', label: 'PC' });
+
+      // Sort items by painter algorithm grid coordinates
+      const positions = [
+        { x: 0.2, y: 0.2, z: 0.3 },
+        { x: 1.5, y: 0.2, z: 0.3 },
+        { x: 0.2, y: 1.5, z: 0.3 },
+        { x: 1.5, y: 1.5, z: 0.3 },
+        { x: 0.2, y: 0.2, z: 1.5 },
+        { x: 1.5, y: 0.2, z: 1.5 },
+        { x: 0.2, y: 1.5, z: 1.5 },
+        { x: 1.5, y: 1.5, z: 1.5 },
+        { x: 0.8, y: 0.8, z: 2.7 },
+        { x: 0.8, y: 0.8, z: 3.8 }
+      ];
+
+      // Draw isometric box helper
+      function drawIsoBox(gx, gy, gz, color, tag) {
+        const w = 1.1;
+        const d = 1.1;
+        const h = 1.0;
+
+        // Points
+        const p1 = iso(gx, gy, gz + h);         // Top front
+        const p2 = iso(gx + w, gy, gz + h);     // Top right
+        const p3 = iso(gx + w, gy + d, gz + h); // Top back
+        const p4 = iso(gx, gy + d, gz + h);     // Top left
+
+        const b1 = iso(gx, gy, gz);
+        const b2 = iso(gx + w, gy, gz);
+        const b3 = iso(gx + w, gy + d, gz);
+        const b4 = iso(gx, gy + d, gz);
+
+        // Right side face
+        ctx.fillStyle = shadeColor(color, -25);
+        ctx.beginPath();
+        ctx.moveTo(p2.px, p2.py);
+        ctx.lineTo(p3.px, p3.py);
+        ctx.lineTo(b3.px, b3.py);
+        ctx.lineTo(b2.px, b2.py);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+        ctx.stroke();
+
+        // Left side face
+        ctx.fillStyle = shadeColor(color, -10);
+        ctx.beginPath();
+        ctx.moveTo(p1.px, p1.py);
+        ctx.lineTo(p4.px, p4.py);
+        ctx.lineTo(b4.px, b4.py);
+        ctx.lineTo(b1.px, b1.py);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+        ctx.stroke();
+
+        // Top face
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(p1.px, p1.py);
+        ctx.lineTo(p2.px, p2.py);
+        ctx.lineTo(p3.px, p3.py);
+        ctx.lineTo(p4.px, p4.py);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+        ctx.stroke();
+
+        // Box label
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 8px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(tag, (p1.px + p3.px) / 2, (p1.py + p3.py) / 2 + 3);
+      }
+
+      stackList.forEach((item, index) => {
+        const pos = positions[index % positions.length];
+        const extraLayer = Math.floor(index / positions.length) * 1.5;
+        drawIsoBox(pos.x, pos.y, pos.z + extraLayer, item.color, item.label);
+      });
+
+      // Update Pallet Badge
+      const badge = document.getElementById('palletFillBadge');
+      if (stackList.length === 0) {
+        badge.textContent = 'Palet Kosong';
+        badge.className = 'text-[10px] uppercase font-bold text-slate-400 bg-slate-800 px-2.5 py-0.5 rounded-full';
+      } else {
+        badge.textContent = `${stackList.length} Item Tersusun`;
+        badge.className = 'text-[10px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20';
+      }
+    }
+
+    // Color helper for 3D faces
+    function shadeColor(color, percent) {
+      let num = parseInt(color.slice(1), 16),
+          amt = Math.round(2.55 * percent),
+          R = (num >> 16) + amt,
+          G = (num >> 8 & 0x00FF) + amt,
+          B = (num & 0x0000FF) + amt;
+      return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
+    }
+
+    // Calculator & Price Sync Functions
+    function updateItemQty(itemKey, delta) {
+      const current = state.items[itemKey];
+      const next = Math.max(0, current + delta);
+      state.items[itemKey] = next;
+      document.getElementById(`qty-${itemKey}`).textContent = next;
+      
+      calculateTotals();
+      drawPallet();
+
+      if (delta > 0) {
+        showToast(`Item ditambahkan ke palet`, 'success');
+      }
+    }
+
+    function setServiceTier(tierKey) {
+      state.tier = tierKey;
+      
+      // Update Tab Styles
+      document.querySelectorAll('.tier-tab-btn').forEach(btn => {
+        btn.className = 'tier-tab-btn py-2.5 px-3 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-all flex flex-col items-center gap-1';
+      });
+
+      const activeBtn = document.getElementById(`btn-tier-${tierKey}`);
+      if (activeBtn) {
+        let activeColor = 'from-emerald-400 to-cyan-400';
+        if (tierKey === 'uni') activeColor = 'from-cyan-400 to-blue-500';
+        if (tierKey === 'host') activeColor = 'from-amber-400 to-orange-400';
+        if (tierKey === 'reloq') activeColor = 'from-purple-400 to-pink-500';
+
+        activeBtn.className = `tier-tab-btn py-2.5 px-3 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r ${activeColor} transition-all flex flex-col items-center gap-1 shadow-lg`;
+      }
+
+      // Hide or show duration slider if Reloq Only
+      const durationCard = document.getElementById('durationCard');
+      if (tierKey === 'reloq') {
+        durationCard.classList.add('opacity-40', 'pointer-events-none');
+      } else {
+        durationCard.classList.remove('opacity-40', 'pointer-events-none');
+      }
+
+      calculateTotals();
+    }
+
+    function updateDuration(val) {
+      state.duration = parseInt(val);
+      document.getElementById('durationDisplay').textContent = `${val} Bulan`;
+      calculateTotals();
+    }
+
+    function calculateTotals() {
+      const tierConfig = tierMultipliers[state.tier];
+      let monthlyItemTotal = 0;
+      let totalItemCount = 0;
+
+      for (let k in state.items) {
+        monthlyItemTotal += state.items[k] * baseRates[k];
+        totalItemCount += state.items[k];
+      }
+
+      document.getElementById('totalItemsCount').textContent = `${totalItemCount} Item Terpilih`;
+
+      let finalPrice = 0;
+      if (state.tier === 'reloq') {
+        // Flat relocation fee based on base items
+        finalPrice = tierConfig.pickup + (totalItemCount * 15000);
+      } else {
+        // Storage calculation: (monthlyItemTotal * tierMultiplier * duration) + pickup fee
+        const storageBase = monthlyItemTotal * tierConfig.rate * state.duration;
+        finalPrice = Math.round(storageBase + (totalItemCount > 0 ? tierConfig.pickup : 0));
+      }
+
+      // Format currency
+      document.getElementById('totalPriceDisplay').textContent = formatIDR(finalPrice);
+      document.getElementById('selectedTierLabel').textContent = tierConfig.label;
+
+      // Comparative savings calculation
+      // Kos average estimated at Rp 1.200.000 / month
+      const months = state.tier === 'reloq' ? 1 : state.duration;
+      const avgKosCost = 1200000 * months;
+      document.getElementById('costKosDisplay').textContent = formatIDR(avgKosCost);
+
+      const saved = Math.max(0, avgKosCost - finalPrice);
+      document.getElementById('savedMoneyDisplay').textContent = formatIDR(saved);
+
+      const pctSaved = Math.min(95, Math.round((saved / avgKosCost) * 100));
+      document.getElementById('badgeSavingsPercent').textContent = `Hemat ${pctSaved}% vs Kos`;
+
+      // Update Canvas hint
+      const hint = document.getElementById('canvasHint');
+      if (totalItemCount === 0) {
+        hint.innerHTML = 'Tekan tombol <span class="text-emerald-400 font-bold">(+)</span> pada barang untuk menyusun muatan secara real-time.';
+      } else {
+        hint.innerHTML = `Muatan terisi <span class="text-white font-bold">${totalItemCount} barang</span> di atas palet berstandar kelembaban &lt;50% RH.`;
+      }
+    }
+
+    function formatIDR(val) {
+      return 'Rp ' + val.toLocaleString('id-ID');
+    }
+
+    // Laser Scan & Seal Verification Demo Simulation
+    let isScanning = false;
+    function triggerLaserScan() {
+      if (isScanning) return;
+      isScanning = true;
+
+      const beam = document.getElementById('laserBeam');
+      const btn = document.getElementById('btnScanSeal');
+      const btnText = document.getElementById('btnScanText');
+      const badge = document.getElementById('sealStatusBadge');
+
+      beam.classList.remove('hidden');
+      btnText.textContent = 'Memindai Kriptografi SHA-256...';
+      btn.classList.add('bg-cyan-500/50', 'animate-pulse');
+
+      // Synthesize sound beep using Web Audio API
+      playScannerAudioTone();
+
+      setTimeout(() => {
+        btnText.textContent = 'Memvalidasi Sensor RFID Fisik...';
+      }, 1000);
+
+      setTimeout(() => {
+        beam.classList.add('hidden');
+        btnText.textContent = 'Uji Integritas Segel';
+        btn.classList.remove('bg-cyan-500/50', 'animate-pulse');
+        isScanning = false;
+
+        badge.innerHTML = '<i class="fa-solid fa-shield-check mr-1"></i> 100% TERVERIFIKASI UTUH';
+        badge.className = 'text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/50';
+
+        showToast('Segel Fisik & Hash Digital Sah! Tidak ada anomali atau perusakan.', 'success');
+      }, 2200);
+    }
+
+    // Web Audio API tone generator (no external sound files required)
+    function playScannerAudioTone() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctxAudio = new AudioCtx();
+        const osc = ctxAudio.createOscillator();
+        const gain = ctxAudio.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(880, ctxAudio.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1760, ctxAudio.currentTime + 0.3);
+
+        gain.gain.setValueAtTime(0.05, ctxAudio.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctxAudio.currentTime + 0.4);
+
+        osc.connect(gain);
+        gain.connect(ctxAudio.destination);
+        osc.start();
+        osc.stop(ctxAudio.currentTime + 0.4);
+      } catch (e) {
+        // Silent fallback if audio context blocked by browser policy
+      }
+    }
+
+    function setTrackDemo(code) {
+      document.getElementById('trackingInput').value = code;
+      const data = trackingDemoDB[code];
+      if (!data) return;
+
+      document.getElementById('sealOwner').textContent = data.owner;
+      document.getElementById('sealTagSerial').textContent = data.serial;
+      document.getElementById('sealHashKey').textContent = data.hash;
+      document.getElementById('sealTimestamp').textContent = data.time;
+      document.getElementById('sealOfficer').textContent = data.officer;
+      document.getElementById('telemetryTemp').textContent = data.temp;
+      document.getElementById('telemetryHumidity').textContent = data.humidity;
+
+      showToast(`Memuat data resi demo: ${code}`, 'info');
+    }
+
+    // Booking Wizard Multi-Step Flow
+    function openBookingWizard() {
+      const modal = document.getElementById('bookingModal');
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        modal.classList.remove('opacity-0');
+      }, 10);
+      goToWizardStep(1);
+      updateModalStep1Summary();
+    }
+
+    function closeBookingWizard() {
+      const modal = document.getElementById('bookingModal');
+      modal.classList.add('opacity-0');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+      }, 300);
+    }
+
+    function selectTierAndOpenWizard(tierKey) {
+      setServiceTier(tierKey);
+      openBookingWizard();
+    }
+
+    function proceedToBookingFromEstimator() {
+      let totalItemCount = 0;
+      for (let k in state.items) totalItemCount += state.items[k];
+
+      if (totalItemCount === 0) {
+        showToast('Pilih minimal 1 boks atau barang bawaan terlebih dahulu!', 'warning');
+        return;
+      }
+      openBookingWizard();
+    }
+
+    function goToWizardStep(stepNum) {
+      state.currentStep = stepNum;
+      document.querySelectorAll('.wizard-step').forEach(step => step.classList.add('hidden'));
+      document.getElementById(`wizardStep-${stepNum}`).classList.remove('hidden');
+
+      // Update dots indicator
+      for (let i = 1; i <= 4; i++) {
+        const dot = document.getElementById(`stepDot-${i}`);
+        if (i < stepNum) {
+          dot.className = 'w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-xs';
+          dot.innerHTML = '<i class="fa-solid fa-check"></i>';
+        } else if (i === stepNum) {
+          dot.className = 'w-8 h-8 rounded-xl bg-emerald-500 text-slate-950 font-bold flex items-center justify-center text-xs';
+          dot.textContent = i;
+        } else {
+          dot.className = 'w-8 h-8 rounded-xl bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-xs';
+          dot.textContent = i;
+        }
+      }
+    }
+
+    function updateModalStep1Summary() {
+      document.getElementById('modalTierSelect').value = state.tier;
+      
+      const summaryItems = [];
+      if (state.items.tote > 0) summaryItems.push(`Tote (${state.items.tote})`);
+      if (state.items.luggage > 0) summaryItems.push(`Koper (${state.items.luggage})`);
+      if (state.items.fridge > 0) summaryItems.push(`Kulkas (${state.items.fridge})`);
+      if (state.items.mattress > 0) summaryItems.push(`Kasur (${state.items.mattress})`);
+      if (state.items.monitor > 0) summaryItems.push(`PC (${state.items.monitor})`);
+
+      document.getElementById('modalSummaryItems').textContent = summaryItems.length > 0 ? summaryItems.join(', ') : 'Belum memilih item';
+      document.getElementById('modalSummaryDuration').textContent = state.tier === 'reloq' ? 'Pindahan Langsung (1 Hari)' : `${state.duration} Bulan`;
+      document.getElementById('modalSummaryPrice').textContent = document.getElementById('totalPriceDisplay').textContent;
+    }
+
+    function syncTierFromModal(tierVal) {
+      setServiceTier(tierVal);
+      updateModalStep1Summary();
+    }
+
+    function validateStep2AndProceed() {
+      const name = document.getElementById('custName').value.trim();
+      const phone = document.getElementById('custPhone').value.trim();
+      const addr = document.getElementById('custAddress').value.trim();
+
+      if (!name || !phone || !addr) {
+        showToast('Mohon lengkapi nama, kontak WhatsApp, dan alamat indekos!', 'warning');
+        return;
+      }
+      goToWizardStep(3);
+    }
+
+    function generateDigitalTicketAndComplete() {
+      const name = document.getElementById('custName').value;
+      const phone = document.getElementById('custPhone').value;
+      const addr = document.getElementById('custAddress').value;
+      const cluster = document.getElementById('custCluster').value;
+      const slot = document.querySelector('input[name="pickupSlot"]:checked').value;
+
+      const randomId = 'STP-' + Math.floor(1000 + Math.random() * 9000) + '-' + cluster.split('-')[0];
+
+      document.getElementById('ticketBookingId').textContent = randomId;
+      document.getElementById('ticketCustName').textContent = name;
+      document.getElementById('ticketCustPhone').textContent = phone;
+      document.getElementById('ticketCluster').textContent = cluster;
+      document.getElementById('ticketSlot').textContent = slot;
+      document.getElementById('ticketAddress').textContent = addr;
+
+      goToWizardStep(4);
+      showToast('Tiket Reservasi Digital Berhasil Diterbitkan!', 'success');
+    }
+
+    function downloadTicketMock() {
+      const ticketId = document.getElementById('ticketBookingId').textContent;
+      // Copy ID to clipboard
+      const dummy = document.createElement('textarea');
+      dummy.value = `[TIKET STASHPOINT] ID Reservasi: ${ticketId}\nNama: ${document.getElementById('ticketCustName').textContent}\nKlaster: ${document.getElementById('ticketCluster').textContent}\nSlot: ${document.getElementById('ticketSlot').textContent}`;
+      document.body.appendChild(dummy);
+      dummy.select();
+      document.execCommand('copy');
+      document.body.removeChild(dummy);
+
+      showToast(`Data Tiket (${ticketId}) telah disalin ke clipboard!`, 'success');
+    }
+
+    // FAQ Accordion Toggle
+    function toggleFaq(num) {
+      const answer = document.getElementById(`faqAnswer-${num}`);
+      const icon = document.getElementById(`faqIcon-${num}`);
+      if (answer.classList.contains('hidden')) {
+        answer.classList.remove('hidden');
+        icon.classList.add('rotate-180');
+      } else {
+        answer.classList.add('hidden');
+        icon.classList.remove('rotate-180');
+      }
+    }
+
+    // Smooth Scroll Helper
+    function scrollToSection(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    // Animated Counter for Hero Metrics
+    function animateCounters() {
+      const targets = [
+        { id: 'stat-boxes', val: 14280, prefix: '', suffix: '+' },
+        { id: 'stat-savings', val: 2.4, prefix: 'Rp ', suffix: ' Miliar' },
+        { id: 'stat-security', val: 99.98, prefix: '', suffix: '%' },
+        { id: 'stat-cities', val: 5, prefix: '', suffix: ' Kota Besar' }
+      ];
+
+      targets.forEach(item => {
+        const el = document.getElementById(item.id);
+        if (!el) return;
+        let start = 0;
+        const duration = 1800;
+        const steps = 40;
+        const stepTime = duration / steps;
+        let current = 0;
+
+        const timer = setInterval(() => {
+          current++;
+          const progress = current / steps;
+          const currentVal = (item.val * progress).toFixed(item.val % 1 !== 0 ? 2 : 0);
+          el.textContent = `${item.prefix}${currentVal}${item.suffix}`;
+
+          if (current >= steps) {
+            clearInterval(timer);
+            el.textContent = `${item.prefix}${item.val}${item.suffix}`;
+          }
+        }, stepTime);
+      });
+    }
+
+    // Custom Toast Notifications
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+
+      let iconColor = 'text-cyan-400';
+      let icon = 'fa-info-circle';
+      let border = 'border-slate-800';
+
+      if (type === 'success') {
+        iconColor = 'text-emerald-400';
+        icon = 'fa-circle-check';
+        border = 'border-emerald-500/40';
+      } else if (type === 'warning') {
+        iconColor = 'text-amber-400';
+        icon = 'fa-triangle-exclamation';
+        border = 'border-amber-500/40';
+      }
+
+      toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl glass-card border ${border} text-xs text-white shadow-2xl transition-all transform translate-y-2 opacity-0 duration-200 max-w-sm`;
+      toast.innerHTML = `
+        <i class="fa-solid ${icon} ${iconColor} text-base shrink-0"></i>
+        <div class="leading-snug">${message}</div>
+      `;
+
+      container.appendChild(toast);
+
+      // Animate in
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      // Auto remove after 3.5s
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'scale-95');
+        setTimeout(() => toast.remove(), 250);
+      }, 3500);
+    }
+
+    // Window Onload Initialization
+    window.addEventListener('load', () => {
+      calculateTotals();
+      drawPallet();
+      animateCounters();
+    });
+  </script>
+</body>
+</html>
